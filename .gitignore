@@ -1,0 +1,10 @@
+.DS_Store
+.env
+# Node modules
+build
+logs
+MONGODB
+node_modules
+npm-debug.log*
+tailwind.config.js
+uploads/
