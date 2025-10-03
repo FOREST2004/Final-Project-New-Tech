@@ -9,6 +9,7 @@ import errorHandlerMiddleware from './middlewares/error.js';
 const app = express();
 const port = process.env.PORT || 3000;
 const MONGODB_URL = process.env.MONGODB_URI;
+const DATABASE_NAME = process.env.DATABASE_NAME;
 
 // Middleware
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -26,6 +27,7 @@ mongoose
     .connect(MONGODB_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        dbName: DATABASE_NAME,
     })
     .then(() => {
         console.log('Đã kết nối tới MongoDB');
