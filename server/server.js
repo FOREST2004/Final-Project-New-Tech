@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '30mb' }));
 app.use(cors());
 
 // Routes
-app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Xử lý lỗi
 app.use(errorHandlerMiddleware);
