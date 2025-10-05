@@ -18,7 +18,7 @@ const AdminCategoryForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit();
+    onSubmit(e);
   };
 
   return (

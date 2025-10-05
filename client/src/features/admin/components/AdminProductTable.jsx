@@ -1,6 +1,6 @@
 const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) => {
   const getCategoryName = (categoryId) => {
-    const category = categories.find(cat => cat.id === categoryId);
+    const category = categories.find(cat => cat.category_id === categoryId);
     return category ? category.name : 'Không xác định';
   };
 
@@ -70,13 +70,13 @@ const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) 
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
+              <tr key={product.product_id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="h-12 w-12 flex-shrink-0">
                       <img
                         className="h-12 w-12 rounded-lg object-cover"
-                        src={product.image || '/placeholder-product.jpg'}
+                        src={product.image_url || '/placeholder-product.jpg'}
                         alt={product.name}
                         onError={(e) => {
                           e.target.src = '/placeholder-product.jpg';
@@ -95,7 +95,7 @@ const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {getCategoryName(product.categoryId)}
+                    {getCategoryName(product.category_id)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -105,9 +105,9 @@ const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {product.stock} sản phẩm
+                    {product.stock_quantity} sản phẩm
                   </div>
-                  {product.stock <= 5 && (
+                  {product.stock_quantity <= 5 && (
                     <div className="text-xs text-red-600">
                       Sắp hết hàng
                     </div>
@@ -115,11 +115,11 @@ const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    product.stock > 0 
+                    product.stock_quantity > 0 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}
+                    {product.stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -134,7 +134,7 @@ const AdminProductTable = ({ products, categories, onEdit, onDelete, loading }) 
                       </svg>
                     </button>
                     <button
-                      onClick={() => onDelete(product.id)}
+                      onClick={() => onDelete(product.product_id)}
                       className="text-red-600 hover:text-red-900 p-1"
                       title="Xóa"
                     >

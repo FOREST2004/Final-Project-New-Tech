@@ -1,18 +1,39 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { categoryService, productService, apiClient, API_ENDPOINTS } from '../../../shared/services';
+import { useAuth } from '../../../shared/context/AuthContext';
 import Layout from '../../../shared/components/Layout';
 import AdminDashboard from '../components/AdminDashboard';
 import AdminCategoryForm from '../components/AdminCategoryForm';
 import AdminCategoryTable from '../components/AdminCategoryTable';
 import AdminProductForm from '../components/AdminProductForm';
 import AdminProductTable from '../components/AdminProductTable';
+import ConfirmDialog from '../../../shared/components/ConfirmDialog';
 
 const Admin = () => {
+  const { user, loading: authLoading, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if not admin
+  if (!authLoading && (!user || user.role !== 'admin')) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   // Category form state
   const [categoryForm, setCategoryForm] = useState({
@@ -31,6 +52,15 @@ const Admin = () => {
     image_url: ''
   });
   const [editingProduct, setEditingProduct] = useState(null);
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    type: 'category', // 'category' | 'product'
+    id: null,
+    title: '',
+    message: ''
+  });
 
   useEffect(() => {
     fetchCategories();
@@ -66,22 +96,36 @@ const Admin = () => {
   };
 
   // Category CRUD
-  const handleCategorySubmit = async (e) => {
-    e.preventDefault();
+  const handleCategorySubmit = async () => {
     setLoading(true);
+    setError('');
+    setSuccess('');
+
+    // Client-side validation
+    if (!categoryForm.name.trim()) {
+      setError('Tên danh mục không được để trống');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (editingCategory) {
-        await apiClient.put(`${API_ENDPOINTS.CATEGORIES}/${editingCategory.category_id}`, categoryForm);
+        await categoryService.updateCategory(editingCategory.category_id, categoryForm);
+        setSuccess('Cập nhật danh mục thành công');
       } else {
-        await apiClient.post(API_ENDPOINTS.CATEGORIES, categoryForm);
+        await categoryService.createCategory(categoryForm);
+        setSuccess('Thêm danh mục thành công');
       }
       setCategoryForm({ name: '', description: '' });
       setEditingCategory(null);
       fetchCategories();
-      setError('');
     } catch (error) {
-      setError('Lỗi khi lưu danh mục');
       console.error('Error saving category:', error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError(editingCategory ? 'Lỗi khi cập nhật danh mục' : 'Lỗi khi thêm danh mục');
+      }
     }
     setLoading(false);
   };
@@ -99,23 +143,60 @@ const Admin = () => {
     setEditingCategory(null);
   };
 
+  const handleDeleteCategory = (id) => {
+    const category = categories.find(cat => cat.category_id === id);
+    setConfirmDialog({
+      isOpen: true,
+      type: 'category',
+      id: id,
+      title: 'Xóa danh mục',
+      message: `Bạn có chắc chắn muốn xóa danh mục "${category?.name}"? Hành động này không thể hoàn tác.`
+    });
+  };
+
   const deleteCategory = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa danh mục này?')) {
-      try {
-        await apiClient.delete(`${API_ENDPOINTS.CATEGORIES}/${id}`);
-        fetchCategories();
-        setError('');
-      } catch (error) {
-        setError('Lỗi khi xóa danh mục');
-        console.error('Error deleting category:', error);
-      }
+    try {
+      await categoryService.deleteCategory(id);
+      fetchCategories();
+      setError('');
+      setSuccess('Xóa danh mục thành công');
+    } catch (error) {
+      setError('Lỗi khi xóa danh mục');
+      console.error('Error deleting category:', error);
     }
   };
 
   // Product CRUD
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
+  const handleProductSubmit = async () => {
     setLoading(true);
+    setError('');
+    setSuccess('');
+
+    // Client-side validation
+    if (!productForm.name.trim()) {
+      setError('Tên sản phẩm không được để trống');
+      setLoading(false);
+      return;
+    }
+
+    if (!productForm.category_id) {
+      setError('Vui lòng chọn danh mục');
+      setLoading(false);
+      return;
+    }
+
+    if (!productForm.price || parseFloat(productForm.price) <= 0) {
+      setError('Giá sản phẩm phải lớn hơn 0');
+      setLoading(false);
+      return;
+    }
+
+    if (!productForm.stock_quantity || parseInt(productForm.stock_quantity) < 0) {
+      setError('Số lượng tồn kho không được âm');
+      setLoading(false);
+      return;
+    }
+
     try {
       const productData = {
         ...productForm,
@@ -125,9 +206,11 @@ const Admin = () => {
       };
 
       if (editingProduct) {
-        await apiClient.put(`${API_ENDPOINTS.PRODUCTS}/${editingProduct.product_id}`, productData);
+        await productService.updateProduct(editingProduct.product_id, productData);
+        setSuccess('Cập nhật sản phẩm thành công');
       } else {
-        await apiClient.post(API_ENDPOINTS.PRODUCTS, productData);
+        await productService.createProduct(productData);
+        setSuccess('Thêm sản phẩm thành công');
       }
       
       setProductForm({
@@ -140,10 +223,13 @@ const Admin = () => {
       });
       setEditingProduct(null);
       fetchProducts();
-      setError('');
     } catch (error) {
-      setError('Lỗi khi lưu sản phẩm');
       console.error('Error saving product:', error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError(editingProduct ? 'Lỗi khi cập nhật sản phẩm' : 'Lỗi khi thêm sản phẩm');
+      }
     }
     setLoading(false);
   };
@@ -172,17 +258,32 @@ const Admin = () => {
     setEditingProduct(null);
   };
 
+  const handleDeleteProduct = (id) => {
+    const product = products.find(prod => prod.product_id === id);
+    setConfirmDialog({
+      isOpen: true,
+      type: 'product',
+      id: id,
+      title: 'Xóa sản phẩm',
+      message: `Bạn có chắc chắn muốn xóa sản phẩm "${product?.name}"? Hành động này không thể hoàn tác.`
+    });
+  };
+
   const deleteProduct = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-      try {
-        await apiClient.delete(`${API_ENDPOINTS.PRODUCTS}/${id}`);
-        fetchProducts();
-        setError('');
-      } catch (error) {
-        setError('Lỗi khi xóa sản phẩm');
-        console.error('Error deleting product:', error);
-      }
+    try {
+      await productService.deleteProduct(id);
+      fetchProducts();
+      setError('');
+      setSuccess('Xóa sản phẩm thành công');
+    } catch (error) {
+      setError('Lỗi khi xóa sản phẩm');
+      console.error('Error deleting product:', error);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -190,12 +291,30 @@ const Admin = () => {
       <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-            Quản trị hệ thống
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Quản lý sản phẩm, danh mục và theo dõi hoạt động
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                Quản trị hệ thống
+              </h1>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Quản lý sản phẩm, danh mục và theo dõi hoạt động
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-600 text-sm">
+                Xin chào, <span className="font-medium">{user?.username}</span>
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200 text-sm font-medium flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Error Display */}
@@ -258,6 +377,7 @@ const Admin = () => {
               products={products}
               categories={categories}
               loading={loading}
+              onNavigate={setActiveTab}
             />
           )}
 
@@ -268,10 +388,12 @@ const Admin = () => {
                   {editingCategory ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
                 </h2>
                 <AdminCategoryForm
-                  category={editingCategory}
-                  onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory}
-                  onCancel={() => setEditingCategory(null)}
+                  categoryForm={categoryForm}
+                  setCategoryForm={setCategoryForm}
+                  onSubmit={handleCategorySubmit}
+                  onCancel={cancelCategoryEdit}
                   loading={loading}
+                  editingCategory={editingCategory}
                 />
               </div>
 
@@ -283,7 +405,7 @@ const Admin = () => {
                 </div>
                 <AdminCategoryTable
                   categories={categories}
-                  onEdit={setEditingCategory}
+                  onEdit={editCategory}
                   onDelete={handleDeleteCategory}
                   loading={loading}
                 />
@@ -298,11 +420,13 @@ const Admin = () => {
                   {editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
                 </h2>
                 <AdminProductForm
-                  product={editingProduct}
+                  productForm={productForm}
+                  setProductForm={setProductForm}
                   categories={categories}
-                  onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}
-                  onCancel={() => setEditingProduct(null)}
+                  onSubmit={handleProductSubmit}
+                  onCancel={cancelProductEdit}
                   loading={loading}
+                  editingProduct={editingProduct}
                 />
               </div>
 
@@ -315,7 +439,7 @@ const Admin = () => {
                 <AdminProductTable
                   products={products}
                   categories={categories}
-                  onEdit={setEditingProduct}
+                  onEdit={editProduct}
                   onDelete={handleDeleteProduct}
                   loading={loading}
                 />
@@ -324,6 +448,25 @@ const Admin = () => {
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => {
+          if (confirmDialog.type === 'category') {
+            deleteCategory(confirmDialog.id);
+          } else if (confirmDialog.type === 'product') {
+            deleteProduct(confirmDialog.id);
+          }
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+      />
     </div>
   );
 };

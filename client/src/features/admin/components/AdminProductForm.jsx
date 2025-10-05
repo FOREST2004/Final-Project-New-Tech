@@ -62,7 +62,7 @@ const AdminProductForm = ({
             >
               <option value="">Chọn danh mục</option>
               {categories.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category.category_id} value={category.category_id}>
                   {category.name}
                 </option>
               ))}

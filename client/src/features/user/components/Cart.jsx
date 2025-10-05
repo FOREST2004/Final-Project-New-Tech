@@ -19,9 +19,9 @@ const Cart = ({ cart, onUpdateQuantity, onRemoveItem, onClearCart, loading }) =>
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-800">Giỏ hàng</h3>
-          {cart.itemCount > 0 && (
+          {cart.item_count > 0 && (
             <span className="bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-              {cart.itemCount}
+              {cart.item_count}
             </span>
           )}
         </div>
@@ -30,23 +30,23 @@ const Cart = ({ cart, onUpdateQuantity, onRemoveItem, onClearCart, loading }) =>
           <>
             <div className="max-h-64 overflow-y-auto space-y-3">
               {cart.items.map(item => (
-                <div key={item.id} className="flex items-center space-x-3 p-2 border border-gray-100 rounded-lg">
+                <div key={item.cart_item_id} className="flex items-center space-x-3 p-2 border border-gray-100 rounded-lg">
                   <img
-                    src={item.Product?.image_url || '/placeholder-image.jpg'}
-                    alt={item.Product?.name || 'Product'}
+                    src={item.product?.image_url || '/placeholder-image.jpg'}
+                    alt={item.product?.name || 'Product'}
                     className="w-12 h-12 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-gray-800 truncate">
-                      {item.Product?.name || 'Unknown Product'}
+                      {item.product?.name || 'Unknown Product'}
                     </h4>
                     <p className="text-sm text-gray-600">
-                      {formatPrice(item.Product?.price || 0)}
+                      {formatPrice(item.product?.price || 0)}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => onUpdateQuantity && onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                      onClick={() => onUpdateQuantity && onUpdateQuantity(item.cart_item_id, Math.max(1, item.quantity - 1))}
                       disabled={loading || item.quantity <= 1}
                       className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50"
                     >
@@ -56,14 +56,14 @@ const Cart = ({ cart, onUpdateQuantity, onRemoveItem, onClearCart, loading }) =>
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => onUpdateQuantity && onUpdateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => onUpdateQuantity && onUpdateQuantity(item.cart_item_id, item.quantity + 1)}
                       disabled={loading}
                       className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50"
                     >
                       +
                     </button>
                     <button
-                      onClick={() => onRemoveItem && onRemoveItem(item.id)}
+                      onClick={() => onRemoveItem && onRemoveItem(item.cart_item_id)}
                       disabled={loading}
                       className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 disabled:opacity-50"
                     >
@@ -80,7 +80,7 @@ const Cart = ({ cart, onUpdateQuantity, onRemoveItem, onClearCart, loading }) =>
               <div className="flex justify-between items-center mb-3">
                 <span className="text-sm font-medium text-gray-600">Tổng cộng:</span>
                 <span className="text-lg font-bold text-gray-800">
-                  {formatPrice(cart.totalAmount || 0)}
+                  {formatPrice(cart.total || 0)}
                 </span>
               </div>
               <div className="space-y-2">

@@ -52,7 +52,7 @@ const AdminCategoryTable = ({ categories, onEdit, onDelete, loading }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {categories.map((category) => (
-              <tr key={category.id} className="hover:bg-gray-50">
+              <tr key={category.category_id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {category.name}
@@ -80,7 +80,7 @@ const AdminCategoryTable = ({ categories, onEdit, onDelete, loading }) => {
                       </svg>
                     </button>
                     <button
-                      onClick={() => onDelete(category.id)}
+                      onClick={() => onDelete(category.category_id)}
                       className="text-red-600 hover:text-red-900 p-1"
                       title="Xóa"
                     >

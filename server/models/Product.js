@@ -43,10 +43,8 @@ const ProductModel = (sequelize) => {
     },
     image_url: {
       type: DataTypes.STRING(255),
-      allowNull: true,
-      validate: {
-        isUrl: true
-      }
+      allowNull: true
+      // Đã bỏ validate: { isUrl: true }
     },
     created_at: {
       type: DataTypes.DATE,
